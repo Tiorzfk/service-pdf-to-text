@@ -36,9 +36,12 @@ amqp.connect('amqp://'+rabbitmq_host, function(error0, connection) {
             var file_name = content.ebook_id+'_'+content.file_name
             await downloadFile(cels_api+content.file_pdf, 'pdf/'+file_name)
 
-            //option to extract text from page 0 to 10
+            //option to extract text 10 page
             var option = {from: content.start_page, to: content.start_page+10};
-            await pdfToText('./pdf/'+file_name, option)
+            var pdfText = await pdfToText('./pdf/'+file_name, option)
+
+            //save text to db
+            await saveText(content.ebook_id, pdfText)
 
             setTimeout(function() {
                 console.log(" [x] Done");
@@ -53,10 +56,14 @@ amqp.connect('amqp://'+rabbitmq_host, function(error0, connection) {
 });
 
 async function pdfToText(relative_path, option) {
-    return pdfUtil.pdfToText(path.resolve(relative_path), option, function(err, data) {
-        if (err) throw(err);
-        console.log(data); //print text    
-    });
+    return new Promise((resolve, reject) => {
+        pdfUtil.pdfToText(path.resolve(relative_path), option, function(err, data) {
+            if (err) return reject(err);
+            
+            return resolve(data)
+        });
+    })
+    
 }
 
 async function downloadFile(fileUrl, outputLocationPath) {
@@ -69,4 +76,16 @@ async function downloadFile(fileUrl, outputLocationPath) {
       response.data.pipe(writer);
       return finished(writer); //this is a Promise
     });
-  }
+}
+
+async function saveText(ebook_id, text) {
+    return axios.post(`${cels_api}/api/ebook/text`, {
+        ebook_id: ebook_id,
+        text: text
+      }).then(function (response) {
+            console.log(" [x] Save Text Success");
+      })
+      .catch(function (error) {
+        console.log(" [x] Save Text Failed", error);
+      });
+}
