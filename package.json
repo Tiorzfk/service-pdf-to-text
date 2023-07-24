@@ -12,6 +12,7 @@
     "amqplib": "^0.10.3",
     "axios": "^1.4.0",
     "dotenv": "^16.1.4",
+    "pdf-extract": "^1.0.11",
     "pdf-to-text": "^0.0.7",
     "promisify": "^0.0.3"
   }
